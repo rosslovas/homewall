@@ -1,5 +1,4 @@
-import React, { useEffect, createRef } from 'react';
-import logo from './logo.svg';
+import React, { createRef, useEffect } from 'react';
 import './App.css';
 import { Hold } from './Hold';
 import { Point } from './Point';
@@ -63,10 +62,12 @@ function mouseMove(e: MouseEvent) {
 			ctx.stroke();
 		}
 	}
-	else {
-		const canvas2 = getCanvas2();
-		const ctx = canvas2.getContext('2d')!;
-		ctx.clearRect(0, 0, canvas2.width, canvas2.height)
+
+	const canvas2 = getCanvas2();
+	const ctx = canvas2.getContext('2d')!;
+	ctx.clearRect(0, 0, canvas2.width, canvas2.height);
+
+	if (!drawing) {
 		for (let i = holds.length - 1; i >= 0; --i) {
 			const hold = holds[i];
 			if (hold.isPointInBounds({ x: e.clientX, y: e.clientY }, ctx)) {
@@ -92,7 +93,7 @@ function mouseUp() {
 	}
 }
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
 	useEffect(() => {
 		document.addEventListener('mousemove', mouseMove);
 		document.addEventListener('mouseup', mouseUp);
@@ -110,5 +111,3 @@ const App: React.FC = () => {
 		</div>
 	);
 }
-
-export default App;
