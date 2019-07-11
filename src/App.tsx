@@ -104,10 +104,13 @@ export const App: React.FC = () => {
 		}
 	}, []);
 
-	return (
-		<div className="App">
+	return <>
+		<div id="canvasContainer" style={{width: `${window.innerWidth}px`, height: `${window.innerHeight}px`}}>
 			{canvas1}
 			{canvas2}
 		</div>
-	);
+		<div>
+			<p>Text!</p>
+		</div>
+	</>;
 }
