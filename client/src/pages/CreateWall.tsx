@@ -1,4 +1,4 @@
-import React, { createRef, useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Hold } from '../Hold';
 import { Point } from '../Point';
 import './CreateWall.css';
@@ -8,8 +8,8 @@ export const CreateWall: React.FC = () => {
 	let newPath: Point[] = [];
 	const holds: Hold[] = [];
 
-	const canvas1Ref = createRef<HTMLCanvasElement>();
-	const canvas2Ref = createRef<HTMLCanvasElement>();
+	const canvas1Ref = useRef<HTMLCanvasElement>(null);
+	const canvas2Ref = useRef<HTMLCanvasElement>(null);
 
 	const canvas1 = (
 		<canvas
@@ -31,7 +31,7 @@ export const CreateWall: React.FC = () => {
 		/>
 	);
 
-	// const getCanvas1 = () => canvas1Ref!.current!;
+	const getCanvas1 = useCallback(() => canvas1Ref!.current!, [canvas1Ref]);
 	const getCanvas2 = useCallback(() => canvas2Ref!.current!, [canvas2Ref]);
 	const getCanvas1Context = useCallback(() => canvas1Ref!.current!.getContext('2d')!, [canvas1Ref]);
 	// const getCanvas2Context = () => canvas2Ref!.current!.getContext('2d')!;
@@ -39,29 +39,37 @@ export const CreateWall: React.FC = () => {
 	function mouseDown(e: React.MouseEvent<HTMLCanvasElement>) {
 		if (!drawing.current) {
 			drawing.current = true;
-			newPath = [{ x: e.clientX, y: e.clientY }];
+			const { left, top } = getCanvas1().getBoundingClientRect();
+			const mouseX = e.clientX - left;
+			const mouseY = e.clientY - top;
+			
+			newPath = [{ x: mouseX, y: mouseY }];
 
 			const ctx = getCanvas1Context();
 			ctx.strokeStyle = '#F00';
 			ctx.fillStyle = '#0F0';
 			ctx.lineWidth = 3;
 			ctx.beginPath();
-			ctx.moveTo(e.clientX, e.clientY);
+			ctx.moveTo(mouseX, mouseY);
 		}
 	}
 
 	useEffect(() => {
 		
 		function mouseMove(e: MouseEvent) {
+			const { left, top } = getCanvas1().getBoundingClientRect();
+			const mouseX = e.clientX - left;
+			const mouseY = e.clientY - top;
+
 			if (drawing.current) {
 				const lastPoint = newPath[newPath.length - 1];
-				if (lastPoint.x !== e.clientX ||
-					lastPoint.y !== e.clientY
+				if (lastPoint.x !== mouseX ||
+					lastPoint.y !== mouseY
 				) {
-					newPath.push({ x: e.clientX, y: e.clientY });
+					newPath.push({ x: mouseX, y: mouseY });
 
 					const ctx = getCanvas1Context();
-					ctx.lineTo(e.clientX, e.clientY);
+					ctx.lineTo(mouseX, mouseY);
 					ctx.stroke();
 				}
 			}
@@ -73,7 +81,7 @@ export const CreateWall: React.FC = () => {
 			if (!drawing.current) {
 				for (let i = holds.length - 1; i >= 0; --i) {
 					const hold = holds[i];
-					if (hold.isPointInBounds({ x: e.clientX, y: e.clientY }, ctx)) {
+					if (hold.isPointInBounds({ x: mouseX, y: mouseY }, ctx)) {
 						ctx.fillStyle = '#00F';
 						ctx.fill(hold.path2D);
 						break;
@@ -103,7 +111,7 @@ export const CreateWall: React.FC = () => {
 			document.removeEventListener('mousemove', mouseMove);
 			document.removeEventListener('mouseup', mouseUp);
 		}
-	}, [getCanvas1Context, getCanvas2, holds, newPath]);
+	}, [getCanvas1Context, getCanvas1, getCanvas2, holds, newPath]);
 
 	return <>
 		<div id="canvasContainer" style={{ width: `${window.innerWidth}px`, height: `${window.innerHeight}px` }}>
