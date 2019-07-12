@@ -1,7 +1,7 @@
 import React, { createRef, useEffect } from 'react';
-import './App.css';
-import { Hold } from './Hold';
-import { Point } from './Point';
+import './CreateWall.css';
+import { Hold } from '../Hold';
+import { Point } from '../Point';
 
 let drawing = false;
 let newPath: Point[];
@@ -93,7 +93,7 @@ function mouseUp() {
 	}
 }
 
-export const App: React.FC = () => {
+export const CreateWall: React.FC = () => {
 	useEffect(() => {
 		document.addEventListener('mousemove', mouseMove);
 		document.addEventListener('mouseup', mouseUp);
