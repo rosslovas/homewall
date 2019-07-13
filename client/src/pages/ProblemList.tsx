@@ -13,7 +13,7 @@ export const ProblemList = withRouter(({ match, history }) => {
 
 	useEffect(() => {
 		async function getData() {
-			const response = await fetch(`http://192.168.1.100:9000/api/wall/${wallId}/problems`);
+			const response = await fetch(`/api/wall/${wallId}/problems`);
 			const incomingProblems = await response.json();
 			setProblems(incomingProblems);
 		}

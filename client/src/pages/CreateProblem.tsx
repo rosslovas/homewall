@@ -22,7 +22,7 @@ export const CreateProblem = withRouter(({ match, history }) => {
 
 	useEffect(() => {
 		async function getData() {
-			const response = await fetch(`http://192.168.1.100:9000/api/wall/${wallId}`);
+			const response = await fetch(`/api/wall/${wallId}`);
 			const wall = await response.json();
 			const incomingHolds = wall.holds.map((hold: any) => {
 				const newHold = new Hold(JSON.parse(hold.data));
@@ -38,7 +38,7 @@ export const CreateProblem = withRouter(({ match, history }) => {
 		async function saveProblem() {
 			const data = { problemName, difficulty, holdIds: selectedHolds.map(hold => hold.id) };
 			console.log(data);
-			const response = await fetch(`http://192.168.1.100:9000/api/wall/${wallId}/problems`, {
+			const response = await fetch(`/api/wall/${wallId}/problems`, {
 				method: 'POST',
 				mode: 'cors',
 				headers: { 'Content-Type': 'application/json' },

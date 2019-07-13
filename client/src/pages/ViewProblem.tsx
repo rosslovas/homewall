@@ -16,7 +16,7 @@ export const ViewProblem = withRouter(({ match, history }) => {
 
 	useEffect(() => {
 		async function getData() {
-			const response = await fetch(`http://192.168.1.100:9000/api/wall/${wallId}/problem/${problemId}`);
+			const response = await fetch(`/api/wall/${wallId}/problem/${problemId}`);
 			const problem = await response.json();
 			problem.holds = problem.holds
 				.map((hold: { data: string }) => new Hold(JSON.parse(hold.data)));
