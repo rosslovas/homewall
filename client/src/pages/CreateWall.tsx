@@ -1,9 +1,12 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Hold } from '../Hold';
 import { Point } from '../Point';
 import './CreateWall.css';
 
 export const CreateWall: React.FC = () => {
+
+	const [wallDimensions, setWallDimensions] = useState<{ width: number, height: number } | undefined>(undefined);
+
 	let drawing = useRef(false);
 	let newPath: Point[] = [];
 	const holds: Hold[] = [];
@@ -26,8 +29,8 @@ export const CreateWall: React.FC = () => {
 			newPath = [{ x: mouseX, y: mouseY }];
 
 			const ctx = getCanvas1Context();
-			ctx.strokeStyle = '#F00';
-			ctx.fillStyle = '#0F0';
+			ctx.strokeStyle = '#ffffffff';
+			ctx.fillStyle = '#ffffff11';
 			ctx.lineWidth = 3;
 			ctx.beginPath();
 			ctx.moveTo(mouseX, mouseY);
@@ -94,21 +97,33 @@ export const CreateWall: React.FC = () => {
 	}, [getCanvas1Context, getCanvas1, getCanvas2, holds, newPath]);
 
 	return <>
-		<div id="canvasContainer" style={{ width: `${window.innerWidth}px`, height: `${window.innerHeight}px` }}>
-			<canvas
-				id='canvas1'
-				ref={canvas1Ref}
-				width={window.innerWidth}
-				height={window.innerHeight}
-			/>
-			<canvas
-				id='canvas2'
-				ref={canvas2Ref}
-				width={window.innerWidth}
-				height={window.innerHeight}
+		<div
+			id="canvasContainer"
+			style={{ width: `${window.innerWidth}px`, height: `${window.innerHeight}px` }}
+		>
+			<img
+				id='wallImage'
+				src='/wall.jpg'
+				alt=''
+				onLoad={e => {
+					setWallDimensions({ width: e.currentTarget.width, height: e.currentTarget.height });
+				}} />
+			{wallDimensions && <div>
+				<canvas
+					id='canvas1'
+					ref={canvas1Ref}
+					width={wallDimensions.width}
+					height={wallDimensions.height}
+				/>
+				<canvas
+					id='canvas2'
+					ref={canvas2Ref}
+					width={wallDimensions.width}
+					height={wallDimensions.height}
 
-				onMouseDown={mouseDown}
-			/>
+					onMouseDown={mouseDown}
+				/>
+			</div>}
 		</div>
 		<div>
 			<p>Text!</p>
