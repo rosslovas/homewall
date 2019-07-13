@@ -10,6 +10,9 @@ export class Hold {
 	@Column()
 	name: string;
 
+	@Column('text')
+	data: string = '[]';
+
 	@ManyToOne(type => Wall, wall => wall.holds)
 	wall?: Wall;
 

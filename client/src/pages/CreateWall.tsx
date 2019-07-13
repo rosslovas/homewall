@@ -11,26 +11,6 @@ export const CreateWall: React.FC = () => {
 	const canvas1Ref = useRef<HTMLCanvasElement>(null);
 	const canvas2Ref = useRef<HTMLCanvasElement>(null);
 
-	const canvas1 = (
-		<canvas
-			id='canvas1'
-			ref={canvas1Ref}
-			width={window.innerWidth}
-			height={window.innerHeight}
-		/>
-	);
-
-	const canvas2 = (
-		<canvas
-			id='canvas2'
-			ref={canvas2Ref}
-			width={window.innerWidth}
-			height={window.innerHeight}
-
-			onMouseDown={mouseDown}
-		/>
-	);
-
 	const getCanvas1 = useCallback(() => canvas1Ref!.current!, [canvas1Ref]);
 	const getCanvas2 = useCallback(() => canvas2Ref!.current!, [canvas2Ref]);
 	const getCanvas1Context = useCallback(() => canvas1Ref!.current!.getContext('2d')!, [canvas1Ref]);
@@ -42,7 +22,7 @@ export const CreateWall: React.FC = () => {
 			const { left, top } = getCanvas1().getBoundingClientRect();
 			const mouseX = e.clientX - left;
 			const mouseY = e.clientY - top;
-			
+
 			newPath = [{ x: mouseX, y: mouseY }];
 
 			const ctx = getCanvas1Context();
@@ -55,7 +35,7 @@ export const CreateWall: React.FC = () => {
 	}
 
 	useEffect(() => {
-		
+
 		function mouseMove(e: MouseEvent) {
 			const { left, top } = getCanvas1().getBoundingClientRect();
 			const mouseX = e.clientX - left;
@@ -115,8 +95,20 @@ export const CreateWall: React.FC = () => {
 
 	return <>
 		<div id="canvasContainer" style={{ width: `${window.innerWidth}px`, height: `${window.innerHeight}px` }}>
-			{canvas1}
-			{canvas2}
+			<canvas
+				id='canvas1'
+				ref={canvas1Ref}
+				width={window.innerWidth}
+				height={window.innerHeight}
+			/>
+			<canvas
+				id='canvas2'
+				ref={canvas2Ref}
+				width={window.innerWidth}
+				height={window.innerHeight}
+
+				onMouseDown={mouseDown}
+			/>
 		</div>
 		<div>
 			<p>Text!</p>

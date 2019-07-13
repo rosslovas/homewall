@@ -6,6 +6,8 @@ export class Hold {
 	readonly path2D: Path2D;
 	readonly bounds: Rect;
 
+	id?: number;
+
 	constructor(
 		readonly path: ReadonlyArray<Point>,
 		path2D?: Path2D

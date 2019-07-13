@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { CreateWall } from './pages/CreateWall';
-import './index.css';
-import * as serviceWorker from './serviceWorker';
 import { BrowserRouter as Router, Link, Route } from 'react-router-dom';
+import './index.css';
+import { CreateWall } from './pages/CreateWall';
+import { ViewWall } from './pages/ViewWall';
+import * as serviceWorker from './serviceWorker';
 
 ReactDOM.render(
 	<Router>
@@ -13,7 +14,7 @@ ReactDOM.render(
 					<Link to="/">Home</Link>
 				</li>
 				<li>
-					<Link to="/about">About</Link>
+					<Link to="/wall/1">About</Link>
 				</li>
 				<li>
 					<Link to="/topics">Topics</Link>
@@ -23,6 +24,7 @@ ReactDOM.render(
 			<hr />
 
 			<Route exact path="/" component={CreateWall} />
+			<Route path="/wall/:id" component={ViewWall} />
 		</div>
 	</Router>,
 	document.getElementById('root'));
