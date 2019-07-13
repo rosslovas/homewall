@@ -1,3 +1,4 @@
+import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
 import * as path from 'path';
@@ -34,6 +35,9 @@ import { Wall } from './entities/Wall';
 	// console.log(`New wall has id ${testWall.id}`);
 
 	const app = express();
+
+	app.use(compression());
+
 	app.use(cors());
 	app.options('*', cors());
 
