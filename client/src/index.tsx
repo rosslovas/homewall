@@ -1,9 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Redirect, Switch } from 'react-router';
 import { BrowserRouter as Router, Link, Route } from 'react-router-dom';
 import './index.css';
 import { CreateProblem } from './pages/CreateProblem';
 import { CreateWall } from './pages/CreateWall';
+import { NotFound } from './pages/NotFound';
 import { ProblemList } from './pages/ProblemList';
 import { ViewProblem } from './pages/ViewProblem';
 import * as serviceWorker from './serviceWorker';
@@ -13,22 +15,26 @@ ReactDOM.render(
 		<div>
 			<ul>
 				<li>
-					<Link to="/">Create Wall (WIP)</Link>
+					<Link to='/wall/create'>Create Wall (WIP)</Link>
 				</li>
 				<li>
-					<Link to="/wall/3">Create Problem</Link>
+					<Link to='/wall/3'>Create Problem</Link>
 				</li>
 				<li>
-					<Link to="/wall/3/problems">Problem List</Link>
+					<Link to='/wall/3/problems'>Problem List</Link>
 				</li>
 			</ul>
 
 			<hr />
 
-			<Route exact path="/" component={CreateWall} />
-			<Route exact path="/wall/:wallId" component={CreateProblem} />
-			<Route exact path="/wall/:wallId/problems" component={ProblemList} />
-			<Route exact path="/wall/:wallId/problem/:problemId" component={ViewProblem} />
+			<Switch>
+				<Redirect exact path='/' to='/wall/3' />
+				<Route exact path='/wall/create' component={CreateWall} />
+				<Route exact path='/wall/:wallId(\d+)' component={CreateProblem} />
+				<Route exact path='/wall/:wallId(\d+)/problems' component={ProblemList} />
+				<Route exact path='/wall/:wallId(\d+)/problem/:problemId(\d+)' component={ViewProblem} />
+				<Route component={NotFound} status={404} />
+			</Switch>
 		</div>
 	</Router>,
 	document.getElementById('root'));

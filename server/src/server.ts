@@ -1,9 +1,10 @@
+import cors from 'cors';
 import express from 'express';
+import * as path from 'path';
 import { createConnection } from 'typeorm';
 import { Hold } from './entities/Hold';
-import { Wall } from './entities/Wall';
 import { Problem } from './entities/Problem';
-import cors from 'cors';
+import { Wall } from './entities/Wall';
 
 (async () => {
 
@@ -35,6 +36,8 @@ import cors from 'cors';
 	const app = express();
 	app.use(cors());
 	app.options('*', cors());
+
+	app.use(express.static(path.join(__dirname, '../../client/build')));
 	app.use(express.json());
 
 	app.get('/api/walls', async (req, res) => {
@@ -95,11 +98,19 @@ import cors from 'cors';
 			.findOne(Problem, req.params.problemId, { relations: ['wall', 'holds'] });
 
 		if (!problem || !problem.wall || problem.wall.id !== parseInt(req.params.wallId)) {
-			return res.status(404).end(`Sorry can't find that!`);
+			return res.status(404).end('404 Not Found');
 		}
 
 		res.setHeader('Content-Type', 'application/json');
 		res.end(JSON.stringify(problem, null, 2));
+	});
+
+	app.get('/api', (req, res) => res.status(404).end('404 Not Found'));
+	app.get('/api/*', (req, res) => res.status(404).end('404 Not Found'));
+
+	// Serve frontend
+	app.get('*', (req, res) => {
+		res.sendFile(path.resolve(__dirname, '../../client/build/index.html'));
 	});
 
 	app.listen(9000);
