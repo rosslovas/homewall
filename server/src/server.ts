@@ -2,14 +2,34 @@ import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
 import * as path from 'path';
-import { createConnection } from 'typeorm';
+import { createConnection, ConnectionOptions } from 'typeorm';
 import { Problem } from './entities/Problem';
 import { Wall } from './entities/Wall';
 import { seedDb } from './seedDb';
+import * as PostgressConnectionStringParser from 'pg-connection-string';
 
 (async () => {
 
-	const connection = await createConnection();
+	const connection = await createConnection((() => {
+		const databaseUrl: string | undefined = process.env.DATABASE_URL;
+		if (databaseUrl) {
+			const connectionOptions = PostgressConnectionStringParser.parse(databaseUrl);
+			return {
+				type: 'postgres',
+				host: connectionOptions.host,
+				port: connectionOptions.port,
+				username: connectionOptions.user,
+				password: connectionOptions.password,
+				database: connectionOptions.database,
+				entities: [__dirname + '/entities/*.js'],
+				synchronize: true,
+				extra: {
+					ssl: true
+				}
+			} as ConnectionOptions;
+		}
+	})()!);
+
 	await seedDb();
 	const wallRepository = connection.getRepository(Wall);
 	const problemRepository = connection.getRepository(Problem);
@@ -106,6 +126,6 @@ import { seedDb } from './seedDb';
 		res.sendFile(path.resolve(__dirname, '../../client/build/index.html'));
 	});
 
-	app.listen(9000);
+	app.listen(process.env.PORT || 9000);
 
 })();
