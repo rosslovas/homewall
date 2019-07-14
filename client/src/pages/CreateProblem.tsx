@@ -44,19 +44,23 @@ export const CreateProblem = withRouter(({ match, history }) => {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(data),
 			});
-			const problemId = await response.json();
-			history.push(`/wall/${wallId}/problem/${problemId}`);
+			if (response.ok) {
+				const problemId = await response.json();
+				history.push(`/wall/${wallId}/problem/${problemId}`);
+			}
+			else {
+				alert(`${response.status}: ${await response.text()}`);
+			}
 		}
 		saveProblem();
 	}, [history, wallId, selectedHolds, problemName, difficulty]);
 
 	return <>
-		Problem name:{' '}
+		{'Problem name: '}
 		<input type='text' onChange={e => setProblemName(e.target.value)}></input>
-		<br />
-		Difficulty (optional):{' '}
+		{' Difficulty (optional): '}
 		<input type='text' onChange={e => setDifficulty(e.target.value)}></input>
-		<br />
+		{' '}
 		<button onClick={saveProblem}>Save</button>
 		<hr />
 		<Wall interactive holds={holds} selectedHolds={selectedHolds} holdClicked={holdClicked} />

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Hold } from '../Hold';
 import { Point } from '../Point';
+import './Wall.css';
 
 export interface WallProps {
 	interactive: boolean;
@@ -23,26 +24,26 @@ export const Wall: React.FC<WallProps> = ({ interactive, holds, selectedHolds, h
 
 	const canvasesReady = useCallback(() => {
 		if (ready) {
-			{
+			if (interactive) {
 				const ctx = getCanvas1Context();
-				ctx.strokeStyle = '#ffffff44';
-				ctx.fillStyle = '#ffffff02';
-				ctx.lineWidth = 3;
+				ctx.strokeStyle = '#ffffff33';
+				// ctx.fillStyle = '#ffffff02';
+				ctx.lineWidth = 2.5;
 
 				for (const hold of holds) {
 					ctx.stroke(hold.path2D);
-					ctx.fill(hold.path2D);
+					// ctx.fill(hold.path2D);
 				}
 			}
 
 			{
 				const ctx = getCanvas2Context();
-				ctx.strokeStyle = '#ffffffff';
-				ctx.fillStyle = '#88ff8822';
+				ctx.strokeStyle = '#ffffffaa';
+				ctx.fillStyle = '#88ff880a';
 				ctx.lineWidth = 3.5;
 			}
 		}
-	}, [ready, getCanvas1Context, getCanvas2Context, holds]);
+	}, [ready, interactive, getCanvas1Context, getCanvas2Context, holds]);
 
 	useEffect(() => {
 		if (ready) {

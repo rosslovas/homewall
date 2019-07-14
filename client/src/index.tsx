@@ -13,22 +13,14 @@ import * as serviceWorker from './serviceWorker';
 ReactDOM.render(
 	<Router>
 		<div>
-			<ul>
-				<li>
-					<Link to='/wall/create'>Create Wall (WIP)</Link>
-				</li>
-				<li>
-					<Link to='/wall/3'>Create Problem</Link>
-				</li>
-				<li>
-					<Link to='/wall/3/problems'>Problem List</Link>
-				</li>
-			</ul>
+			<Link to='/wall/1'>Create Problem</Link>
+			{' / '}
+			<Link to='/wall/1/problems'>Problem List</Link>
 
 			<hr />
 
 			<Switch>
-				<Redirect exact path='/' to='/wall/3' />
+				<Redirect exact path='/' to='/wall/1' />
 				<Route exact path='/wall/create' component={CreateWall} />
 				<Route exact path='/wall/:wallId(\d+)' component={CreateProblem} />
 				<Route exact path='/wall/:wallId(\d+)/problems' component={ProblemList} />

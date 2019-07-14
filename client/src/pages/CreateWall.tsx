@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Hold } from '../Hold';
 import { Point } from '../Point';
-import './CreateWall.css';
 
 export const CreateWall: React.FC = () => {
 

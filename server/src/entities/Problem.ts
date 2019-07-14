@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToMany, ManyToOne, PrimaryGeneratedColumn, JoinTable } from 'typeorm';
+import { Column, Entity, ManyToMany, ManyToOne, PrimaryGeneratedColumn, JoinTable, CreateDateColumn } from 'typeorm';
 import { Hold } from './Hold';
 import { Wall } from './Wall';
 
@@ -7,6 +7,9 @@ export class Problem {
 	
     @PrimaryGeneratedColumn()
 	id?: number;
+
+	@CreateDateColumn()
+	createdOn?: Date;
 	
 	@Column()
 	name: string;

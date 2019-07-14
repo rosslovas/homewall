@@ -27,7 +27,7 @@ export const ViewProblem = withRouter(({ match, history }) => {
 	}, [wallId, problemId]);
 
 	return problem ? <>
-		Problem name: {problem.name}{problem.difficulty ? `, difficulty: ${problem.difficulty}` : ''}
+		Problem: {problem.name}{problem.difficulty ? `, difficulty: ${problem.difficulty}` : ''}
 		<hr />
 		<Wall interactive={false} holds={problem.holds} selectedHolds={problem.holds} />
 	</> : <></>;

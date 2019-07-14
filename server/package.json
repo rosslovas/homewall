@@ -7,6 +7,7 @@
 		"compression": "^1.7.4",
 		"cors": "^2.8.5",
 		"express": "^4.17.1",
+		"pg": "^7.11.0",
 		"reflect-metadata": "^0.1.13",
 		"sqlite3": "^4.0.9",
 		"typeorm": "^0.2.18"
@@ -21,6 +22,6 @@
 	"scripts": {
 		"build": "tsc",
 		"build:watch": "tsc --watch",
-		"start": "node dist/server.js"
+		"start": "node build/server.js"
 	}
 }
