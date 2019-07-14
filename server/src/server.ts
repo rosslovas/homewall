@@ -36,9 +36,9 @@ import * as PostgressConnectionStringParser from 'pg-connection-string';
 
 	const app = express();
 	app.use(compression());
-	app.use(cors());
-	app.options('*', cors());
-	app.use(express.static(path.join(__dirname, '../../client/build')));
+	// app.use(cors());
+	// app.options('*', cors());
+	app.use(express.static(path.join(__dirname, '../../client/build'), { maxAge: '1y' }));
 	app.use(express.json());
 
 	app.get('/api/walls', async (req, res) => {
