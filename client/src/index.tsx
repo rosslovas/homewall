@@ -24,6 +24,7 @@ ReactDOM.render(
 				<Route exact path='/wall/create' component={CreateWall} />
 				<Route exact path='/wall/:wallId(\d+)' component={CreateProblem} />
 				<Route exact path='/wall/:wallId(\d+)/problems' component={ProblemList} />
+				<Route exact path='/wall/:wallId(\d+)/problems/trash' render={routeProps => <ProblemList {...routeProps} trash />} />
 				<Route exact path='/wall/:wallId(\d+)/problem/:problemId(\d+)' component={ViewProblem} />
 				<Route component={NotFound} status={404} />
 			</Switch>

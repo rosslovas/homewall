@@ -66,13 +66,29 @@ import * as PostgressConnectionStringParser from 'pg-connection-string';
 
 		const wall = await wallRepository
 			.createQueryBuilder('wall')
+			.leftJoinAndSelect('wall.problems', 'problem')
 			.where('wall.id = :wallId', { wallId })
-			.innerJoinAndSelect('wall.problems', 'problems')
-			.orderBy('problems', 'DESC')
+			.andWhere('problem.deletedOn is null')
+			.orderBy('problem', 'DESC')
 			.getOne();
 
 		res.setHeader('Content-Type', 'application/json');
-		res.end(JSON.stringify(wall!.problems, null, 2));
+		res.end(JSON.stringify(wall ? wall.problems : [], null, 2));
+	});
+
+	app.get('/api/wall/:wallId(\\d+)/problems/trash', async (req, res) => {
+		const { wallId }: { wallId: string } = req.params;
+
+		const wall = await wallRepository
+			.createQueryBuilder('wall')
+			.leftJoinAndSelect('wall.problems', 'problem')
+			.where('wall.id = :wallId', { wallId })
+			.andWhere('problem.deletedOn is not null')
+			.orderBy('problem', 'DESC')
+			.getOne();
+
+		res.setHeader('Content-Type', 'application/json');
+		res.end(JSON.stringify(wall ? wall.problems : [], null, 2));
 	});
 
 	app.post('/api/wall/:wallId(\\d+)/problems', async (req, res) => {
@@ -83,7 +99,7 @@ import * as PostgressConnectionStringParser from 'pg-connection-string';
 			difficulty: string,
 			holdIds: number[],
 		} = req.body;
-		console.log(`req.body: ${JSON.stringify(data)}`);
+
 		if (!data.problemName) {
 			return res.status(400).end(`All problems must have a name`);
 		}
@@ -93,10 +109,12 @@ import * as PostgressConnectionStringParser from 'pg-connection-string';
 
 		const wall = await wallRepository.findOneOrFail(wallId, { relations: ['holds'] });
 		// TODO: Save the linked holds without first looking them up in db?
-		const problem = new Problem(data.problemName);
-		problem.difficulty = data.difficulty || undefined;
-		problem.holds = wall!.holds!.filter(hold => data.holdIds.includes(hold.id!));
-		problem.wall = wall;
+		const problem = new Problem({
+			name: data.problemName,
+			difficulty: data.difficulty || undefined,
+			holds: wall!.holds!.filter(hold => data.holdIds.includes(hold.id!)),
+			wall
+		});
 		await problemRepository.save(problem);
 		console.log(`New problem has id ${problem.id}`);
 
@@ -116,6 +134,22 @@ import * as PostgressConnectionStringParser from 'pg-connection-string';
 
 		res.setHeader('Content-Type', 'application/json');
 		res.end(JSON.stringify(problem, null, 2));
+	});
+
+	app.delete('/api/wall/:wallId(\\d+)/problem/:problemId(\\d+)', async (req, res) => {
+		const { wallId, problemId }: { wallId: string, problemId: string } = req.params;
+		
+		await problemRepository.update(problemId, { deletedOn: new Date() });
+
+		res.end();
+	});
+
+	app.post('/api/wall/:wallId(\\d+)/problem/:problemId(\\d+)/restore', async (req, res) => {
+		const { wallId, problemId }: { wallId: string, problemId: string } = req.params;
+		
+		await problemRepository.update(problemId, { deletedOn: undefined });
+
+		res.end();
 	});
 
 	app.get('/api', (req, res) => res.status(404).end('404 Not Found'));

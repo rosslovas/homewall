@@ -10,9 +10,12 @@ export class Problem {
 
 	@CreateDateColumn()
 	createdOn?: Date;
+
+	@Column({ nullable: true })
+	deletedOn?: Date;
 	
 	@Column()
-	name: string;
+	name!: string;
 
 	@Column({ nullable: true })
 	difficulty?: string;
@@ -24,8 +27,8 @@ export class Problem {
 	@JoinTable()
 	holds?: Hold[];
 
-	constructor(name: string) {
-		this.name = name;
+	constructor(init?: { name: string, difficulty?: string, holds?: Hold[], wall?: Wall }) {
+		if (init) { Object.assign(this, init); }
 	}
 	
 }
