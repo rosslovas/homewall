@@ -1,12 +1,13 @@
 import compression from 'compression';
-import cors from 'cors';
 import express from 'express';
+import sizeOf from 'image-size';
 import * as path from 'path';
-import { createConnection, ConnectionOptions } from 'typeorm';
+import * as PostgressConnectionStringParser from 'pg-connection-string';
+import { ConnectionOptions, createConnection } from 'typeorm';
+import { Image } from './entities/Image';
 import { Problem } from './entities/Problem';
 import { Wall } from './entities/Wall';
-import { seedDb } from './seedDb';
-import * as PostgressConnectionStringParser from 'pg-connection-string';
+import { Hold } from './entities/Hold';
 
 (async () => {
 
@@ -22,6 +23,7 @@ import * as PostgressConnectionStringParser from 'pg-connection-string';
 				password: connectionOptions.password,
 				database: connectionOptions.database,
 				entities: [__dirname + '/entities/*.js'],
+				migrations: [__dirname + '/migrations/*.js'],
 				synchronize: true,
 				extra: {
 					ssl: true
@@ -30,26 +32,82 @@ import * as PostgressConnectionStringParser from 'pg-connection-string';
 		}
 	})()!);
 
-	await seedDb();
 	const wallRepository = connection.getRepository(Wall);
 	const problemRepository = connection.getRepository(Problem);
 
 	const app = express();
 	app.use(compression());
-	// app.use(cors());
-	// app.options('*', cors());
 	app.use(express.static(path.join(__dirname, '../../client/build'), { maxAge: '1y' }));
-	app.use(express.json());
+	app.use(express.json({ limit: 2000000 }));
 
 	app.get('/api/walls', async (req, res) => {
-		const walls = await wallRepository.find();
+		const walls = await wallRepository.find({ order: { createdOn: 'DESC' } });
 
 		res.setHeader('Content-Type', 'application/json');
 		res.end(JSON.stringify(walls, null, 2));
 	});
 
 	app.post('/api/walls', async (req, res) => {
+		const { name, image, holdData }: { name: string, image: string, holdData: { x: number, y: number }[][] } = req.body;
+		if (!name || !image || !holdData) {
+			res.status(400);
+			res.end('Missing data');
+			return;
+		}
 
+		if (holdData.length < 3) {
+			res.status(400);
+			res.end('Too few holds (< 3) is invalid');
+			return;
+		}
+
+		if (holdData.length > 1000) {
+			res.status(400);
+			res.end('Too many holds (> 1000) is invalid');
+			return;
+		}
+
+		if (holdData.some(h => h.length > 10000)) {
+			res.status(400);
+			res.end('A hold with too much data (> 10000 points) is invalid');
+			return;
+		}
+
+		const imageBuffer = Buffer.from(image, 'base64');
+		if (imageBuffer.length < 107 || imageBuffer.length > 1000000) {
+			res.status(400);
+			res.end('toosmall/large');
+			return;
+		}
+
+		const imageInfo = sizeOf(imageBuffer);
+		if (imageInfo.type !== 'jpg' ||
+			imageInfo.width <= 1 || imageInfo.height <= 1 ||
+			imageInfo.width > 2000 || imageInfo.height > 2000
+		) {
+			res.status(400);
+			res.end('badsize');
+			return;
+		}
+
+		const newWall = new Wall(name, new Image(imageBuffer));
+		newWall.holds = holdData.map((points, i) => {
+			const hold = new Hold(`Hold ${i}`);
+			hold.data = JSON.stringify(points.map(p => {
+				if (typeof p.x !== 'number' || typeof p.y !== 'number') {
+					throw new Error('Invalid data');
+				}
+
+				return { x: p.x, y: p.y };
+			}));
+			return hold;
+		});
+		await connection.getRepository(Wall).save(newWall);
+
+		console.log(`New wall has id ${newWall.id}`);
+
+		res.setHeader('Content-Type', 'application/json');
+		res.end(JSON.stringify(newWall.id));
 	});
 
 	app.get('/api/wall/:wallId(\\d+)', async (req, res) => {
@@ -60,6 +118,55 @@ import * as PostgressConnectionStringParser from 'pg-connection-string';
 		res.setHeader('Content-Type', 'application/json');
 		res.end(JSON.stringify(wall, null, 2));
 	});
+	
+	app.get('/api/wall/:wallId(\\d+)/image', async (req, res) => {
+		const { wallId }: { wallId: string } = req.params;
+
+		const wall = await wallRepository.findOne(wallId, { relations: ['image'] });
+		if (!wall || !wall.image || !wall.image.data) {
+			res.status(400);
+			res.end(`Failed to load image for wall ${wallId}`);
+			return;
+		}
+
+		const ifModifiedSince = req.headers['if-modified-since'];
+		if (ifModifiedSince && new Date(wall.image.createdOn!.toUTCString())! <= new Date(ifModifiedSince)) {
+			res.status(304);
+			res.end();
+			return;
+		}
+
+		res.contentType('image/jpeg');
+		res.set('Cache-Control', 'public, max-age=31557600');
+		res.set('Last-Modified', wall.image.createdOn!.toUTCString());
+		res.end(wall.image.data);
+	});
+
+	app.get('/api/problems', async (req, res) => {
+		const walls = await wallRepository
+			.createQueryBuilder('wall')
+			.innerJoinAndSelect('wall.problems', 'problem')
+			.where('problem.deletedOn is null')
+			.orderBy('wall.createdOn', 'DESC')
+			.addOrderBy('problem.createdOn', 'DESC')
+			.getMany();
+
+		res.setHeader('Content-Type', 'application/json');
+		res.end(JSON.stringify(walls, null, 2));
+	});
+
+	app.get('/api/problems/trash', async (req, res) => {
+		const walls = await wallRepository
+			.createQueryBuilder('wall')
+			.innerJoinAndSelect('wall.problems', 'problem')
+			.where('problem.deletedOn is not null')
+			.orderBy('wall.createdOn', 'DESC')
+			.addOrderBy('problem.createdOn', 'DESC')
+			.getMany();
+
+		res.setHeader('Content-Type', 'application/json');
+		res.end(JSON.stringify(walls, null, 2));
+	});
 
 	app.get('/api/wall/:wallId(\\d+)/problems', async (req, res) => {
 		const { wallId }: { wallId: string } = req.params;
@@ -69,7 +176,7 @@ import * as PostgressConnectionStringParser from 'pg-connection-string';
 			.leftJoinAndSelect('wall.problems', 'problem')
 			.where('wall.id = :wallId', { wallId })
 			.andWhere('problem.deletedOn is null')
-			.orderBy('problem', 'DESC')
+			.orderBy('problem.createdOn', 'DESC')
 			.getOne();
 
 		res.setHeader('Content-Type', 'application/json');
@@ -84,7 +191,7 @@ import * as PostgressConnectionStringParser from 'pg-connection-string';
 			.leftJoinAndSelect('wall.problems', 'problem')
 			.where('wall.id = :wallId', { wallId })
 			.andWhere('problem.deletedOn is not null')
-			.orderBy('problem', 'DESC')
+			.orderBy('problem.createdOn', 'DESC')
 			.getOne();
 
 		res.setHeader('Content-Type', 'application/json');

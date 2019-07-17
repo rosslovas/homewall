@@ -73,6 +73,6 @@ export const ViewProblem = withRouter(({ match, history }) => {
 				? <button onClick={deleteProblem}>Delete</button>
 				: <button onClick={restoreProblem}>Restore</button>}
 		<hr />
-		<Wall interactive={false} holds={problem.holds} selectedHolds={problem.holds} />
+		<Wall interactive={false} imageSrc={`/api/wall/${wallId}/image`} holds={problem.holds} selectedHolds={problem.holds} />
 	</> : <></>;
 });

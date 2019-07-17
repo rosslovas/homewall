@@ -5,12 +5,13 @@ import './Wall.css';
 
 export interface WallProps {
 	interactive: boolean;
+	imageSrc: string;
 	holds: Hold[];
 	selectedHolds: Hold[];
 	holdClicked?: (hold: Hold) => void;
 }
 
-export const Wall: React.FC<WallProps> = ({ interactive, holds, selectedHolds, holdClicked }) => {
+export const Wall: React.FC<WallProps> = ({ interactive, imageSrc, holds, selectedHolds, holdClicked }) => {
 
 	const [wallDimensions, setWallDimensions] = useState<{ width: number, height: number } | undefined>(undefined);
 	const [ready, setReady] = useState(false);
@@ -119,7 +120,7 @@ export const Wall: React.FC<WallProps> = ({ interactive, holds, selectedHolds, h
 		>
 			<img
 				id='wallImage'
-				src='/wall.jpg'
+				src={imageSrc}
 				alt=''
 				onLoad={e => {
 					setReady(true);

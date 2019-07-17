@@ -63,6 +63,6 @@ export const CreateProblem = withRouter(({ match, history }) => {
 		{' '}
 		<button onClick={saveProblem}>Save</button>
 		<hr />
-		<Wall interactive holds={holds} selectedHolds={selectedHolds} holdClicked={holdClicked} />
+		<Wall interactive imageSrc={`/api/wall/${wallId}/image`} holds={holds} selectedHolds={selectedHolds} holdClicked={holdClicked} />
 	</>;
 });

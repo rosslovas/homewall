@@ -7,34 +7,41 @@ type ProblemListParams = RouteComponentProps<{ wallId: string }> & {
 
 export const ProblemList = withRouter<ProblemListParams, React.FC<ProblemListParams>>(({ match, history, trash }) => {
 
-	const [problems, setProblems] = useState<{
+	const [walls, setWalls] = useState<{
 		id: number,
 		name: string,
-		difficulty: string,
+		problems: {
+			id: number,
+			name: string,
+			difficulty: string,
+		}[]
 	}[] | undefined>();
-
-	const wallId = match.params.wallId;
 
 	useEffect(() => {
 		async function getData() {
-			const response = await fetch(`/api/wall/${wallId}/problems${trash ? '/trash' : ''}`);
-			const incomingProblems = await response.json();
-			setProblems(incomingProblems);
+			const response = await fetch(`/api/problems${trash ? '/trash' : ''}`);
+			const incomingWalls = await response.json();
+			setWalls(incomingWalls);
 		}
 		getData();
-	}, [wallId, trash]);
+	}, [trash]);
 
-	return <>{problems
-		? problems.length
-			? <ul>
-				{problems.map((problem, i) => (
-					<li key={i}>
-						<Link to={`/wall/${wallId}/problem/${problem.id}`}>
-							{problem.name}{problem.difficulty ? ` (difficulty: ${problem.difficulty})` : ''}
-						</Link>
-					</li>
-				))}
-			</ul>
+	return <>{walls
+		? walls.length
+			? <>
+				{walls.map((wall) => <>
+					<h3>{wall.name}</h3>
+					<ul>
+						{wall.problems.map((problem, i) => (
+							<li key={i}>
+								<Link to={`/wall/${wall.id}/problem/${problem.id}`}>
+									{problem.name}{problem.difficulty ? ` (difficulty: ${problem.difficulty})` : ''}
+								</Link>
+							</li>
+						))}
+					</ul>
+				</>)}
+			</>
 			: 'Nothing here.'
 		: 'Loading...'}
 	</>
