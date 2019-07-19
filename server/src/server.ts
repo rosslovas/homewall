@@ -1,5 +1,8 @@
+import * as argon2 from 'argon2';
 import compression from 'compression';
-import express from 'express';
+import express, { Request, Response } from 'express';
+import enforceHTTPS from 'express-enforces-ssl';
+import RateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import sizeOf from 'image-size';
 import * as path from 'path';
@@ -8,11 +11,16 @@ import { ConnectionOptions, createConnection } from 'typeorm';
 import { Hold } from './entities/Hold';
 import { Image } from './entities/Image';
 import { Problem } from './entities/Problem';
-import { Wall } from './entities/Wall';
-import RateLimit from 'express-rate-limit';
-import enforceHTTPS from 'express-enforces-ssl';
-import * as argon2 from 'argon2';
 import { User } from './entities/User';
+import { Wall } from './entities/Wall';
+
+class BadRequestError extends Error {
+	name = 'BadRequestError';
+}
+
+class UnauthorisedError extends Error {
+	name = 'UnauthorisedError';
+}
 
 (async () => {
 
@@ -41,6 +49,22 @@ import { User } from './entities/User';
 	const problemRepository = connection.getRepository(Problem);
 
 	const app = express();
+
+	function get(path: string, handler: (req: Request, res: Response) => Promise<any>) {
+		return app.get(path, (req, res, next) => handler(req, res).catch(next));
+	}
+
+	function post(path: string, handler: (req: Request, res: Response) => Promise<any>) {
+		return app.post(path, (req, res, next) => handler(req, res).catch(next));
+	}
+
+	function put(path: string, handler: (req: Request, res: Response) => Promise<any>) {
+		return app.put(path, (req, res, next) => handler(req, res).catch(next));
+	}
+
+	function del(path: string, handler: (req: Request, res: Response) => Promise<any>) {
+		return app.delete(path, (req, res, next) => handler(req, res).catch(next));
+	}
 	
 	app.enable('trust proxy');
 	app.use(enforceHTTPS());
@@ -62,14 +86,14 @@ import { User } from './entities/User';
 	app.use(express.static(path.join(__dirname, '../../client/build'), { maxAge: '1y' }));
 	app.use(express.json({ limit: 2000000 }));
 
-	app.get('/api/walls', async (req, res) => {
+	get('/api/walls', async (req, res) => {
 		const walls = await wallRepository.find({ order: { createdOn: 'DESC' } });
 
 		res.setHeader('Content-Type', 'application/json');
 		res.end(JSON.stringify(walls, null, 2));
 	});
 
-	app.post('/api/walls', async (req, res) => {
+	post('/api/walls', async (req, res) => {
 		const { username, password, name, image, holdData }: {
 			username: string,
 			password: string,
@@ -79,34 +103,24 @@ import { User } from './entities/User';
 		} = req.body;
 
 		if (!name || !image || !holdData) {
-			res.status(400);
-			res.end('Missing data');
-			return;
+			throw new BadRequestError('Missing data');
 		}
 
 		if (holdData.length < 3) {
-			res.status(400);
-			res.end('Too few holds (< 3) is invalid');
-			return;
+			throw new BadRequestError('Too few holds (< 3) is invalid');
 		}
 
 		if (holdData.length > 1000) {
-			res.status(400);
-			res.end('Too many holds (> 1000) is invalid');
-			return;
+			throw new BadRequestError('Too many holds (> 1000) is invalid');
 		}
 
 		if (holdData.some(h => h.length > 10000)) {
-			res.status(400);
-			res.end('A hold with too much data (> 10000 points) is invalid');
-			return;
+			throw new BadRequestError('A hold with too much data (> 10000 points) is invalid');
 		}
 
 		const imageBuffer = Buffer.from(image, 'base64');
 		if (imageBuffer.length < 107 || imageBuffer.length > 1000000) {
-			res.status(400);
-			res.end('toosmall/large');
-			return;
+			throw new BadRequestError('Image file is too invalid or too large');
 		}
 
 		const imageInfo = sizeOf(imageBuffer);
@@ -114,16 +128,12 @@ import { User } from './entities/User';
 			imageInfo.width <= 1 || imageInfo.height <= 1 ||
 			imageInfo.width > 2000 || imageInfo.height > 2000
 		) {
-			res.status(400);
-			res.end('badsize');
-			return;
+			throw new BadRequestError('Image must be between 1x1 and 2000x2000 pixels');
 		}
 
 		const user = await connection.getRepository(User).findOne({ where: { username } });
 		if (!user || !(await argon2.verify(user.passwordHash, password))) {
-			res.status(401);
-			res.end('Bad username and/or password');
-			return;
+			throw new UnauthorisedError('Bad username and/or password');
 		}
 
 		const newWall = new Wall(name, new Image(imageBuffer));
@@ -131,7 +141,7 @@ import { User } from './entities/User';
 			const hold = new Hold(`Hold ${i}`);
 			hold.data = JSON.stringify(points.map(p => {
 				if (typeof p.x !== 'number' || typeof p.y !== 'number') {
-					throw new Error('Invalid data');
+					throw new BadRequestError('Invalid data');
 				}
 
 				return { x: p.x, y: p.y };
@@ -146,7 +156,7 @@ import { User } from './entities/User';
 		res.end(JSON.stringify(newWall.id));
 	});
 
-	app.get('/api/wall/:wallId(\\d+)', async (req, res) => {
+	get('/api/wall/:wallId(\\d+)', async (req, res) => {
 		const { wallId }: { wallId: string } = req.params;
 
 		const wall = await wallRepository.findOneOrFail(wallId, { relations: ['holds'] });
@@ -155,21 +165,17 @@ import { User } from './entities/User';
 		res.end(JSON.stringify(wall, null, 2));
 	});
 	
-	app.get('/api/wall/:wallId(\\d+)/image', async (req, res) => {
+	get('/api/wall/:wallId(\\d+)/image', async (req, res) => {
 		const { wallId }: { wallId: string } = req.params;
 
 		const wall = await wallRepository.findOne(wallId, { relations: ['image'] });
 		if (!wall || !wall.image || !wall.image.data) {
-			res.status(400);
-			res.end(`Failed to load image for wall ${wallId}`);
-			return;
+			throw new BadRequestError(`Failed to load image for wall ${wallId}`);
 		}
 
 		const ifModifiedSince = req.headers['if-modified-since'];
 		if (ifModifiedSince && new Date(wall.image.createdOn!.toUTCString())! <= new Date(ifModifiedSince)) {
-			res.status(304);
-			res.end();
-			return;
+			return res.status(304).end();
 		}
 
 		res.contentType('image/jpeg');
@@ -178,7 +184,7 @@ import { User } from './entities/User';
 		res.end(wall.image.data);
 	});
 
-	app.get('/api/problems', async (req, res) => {
+	get('/api/problems', async (req, res) => {
 		const walls = await wallRepository
 			.createQueryBuilder('wall')
 			.innerJoinAndSelect('wall.problems', 'problem')
@@ -191,7 +197,7 @@ import { User } from './entities/User';
 		res.end(JSON.stringify(walls, null, 2));
 	});
 
-	app.get('/api/problems/trash', async (req, res) => {
+	get('/api/problems/trash', async (req, res) => {
 		const walls = await wallRepository
 			.createQueryBuilder('wall')
 			.innerJoinAndSelect('wall.problems', 'problem')
@@ -204,7 +210,7 @@ import { User } from './entities/User';
 		res.end(JSON.stringify(walls, null, 2));
 	});
 
-	app.get('/api/wall/:wallId(\\d+)/problems', async (req, res) => {
+	get('/api/wall/:wallId(\\d+)/problems', async (req, res) => {
 		const { wallId }: { wallId: string } = req.params;
 
 		const wall = await wallRepository
@@ -219,7 +225,7 @@ import { User } from './entities/User';
 		res.end(JSON.stringify(wall ? wall.problems : [], null, 2));
 	});
 
-	app.get('/api/wall/:wallId(\\d+)/problems/trash', async (req, res) => {
+	get('/api/wall/:wallId(\\d+)/problems/trash', async (req, res) => {
 		const { wallId }: { wallId: string } = req.params;
 
 		const wall = await wallRepository
@@ -234,7 +240,7 @@ import { User } from './entities/User';
 		res.end(JSON.stringify(wall ? wall.problems : [], null, 2));
 	});
 
-	app.post('/api/wall/:wallId(\\d+)/problems', async (req, res) => {
+	post('/api/wall/:wallId(\\d+)/problems', async (req, res) => {
 		const { wallId }: { wallId: string } = req.params;
 
 		const data: {
@@ -244,10 +250,10 @@ import { User } from './entities/User';
 		} = req.body;
 
 		if (!data.problemName) {
-			return res.status(400).end(`All problems must have a name`);
+			throw new BadRequestError('All problems must have a name');
 		}
 		if (data.holdIds.length < 2) {
-			return res.status(400).end(`All problems must have at least 2 holds`);
+			throw new BadRequestError('All problems must have at least 2 holds');
 		}
 
 		const wall = await wallRepository.findOneOrFail(wallId, { relations: ['holds'] });
@@ -265,7 +271,7 @@ import { User } from './entities/User';
 		res.end(JSON.stringify(problem.id));
 	});
 
-	app.get('/api/wall/:wallId(\\d+)/problem/:problemId(\\d+)', async (req, res) => {
+	get('/api/wall/:wallId(\\d+)/problem/:problemId(\\d+)', async (req, res) => {
 		const { wallId, problemId }: { wallId: string, problemId: string } = req.params;
 
 		const problem = await problemRepository
@@ -279,7 +285,7 @@ import { User } from './entities/User';
 		res.end(JSON.stringify(problem, null, 2));
 	});
 
-	app.delete('/api/wall/:wallId(\\d+)/problem/:problemId(\\d+)', async (req, res) => {
+	del('/api/wall/:wallId(\\d+)/problem/:problemId(\\d+)', async (req, res) => {
 		const { wallId, problemId }: { wallId: string, problemId: string } = req.params;
 		
 		await problemRepository.update(problemId, { deletedOn: new Date() });
@@ -287,7 +293,7 @@ import { User } from './entities/User';
 		res.end();
 	});
 
-	app.post('/api/wall/:wallId(\\d+)/problem/:problemId(\\d+)/restore', async (req, res) => {
+	post('/api/wall/:wallId(\\d+)/problem/:problemId(\\d+)/restore', async (req, res) => {
 		const { wallId, problemId }: { wallId: string, problemId: string } = req.params;
 		
 		await problemRepository.update(problemId, { deletedOn: undefined });
@@ -295,13 +301,24 @@ import { User } from './entities/User';
 		res.end();
 	});
 
-	app.get('/api', (req, res) => res.status(404).end('404 Not Found'));
-	app.get('/api/*', (req, res) => res.status(404).end('404 Not Found'));
+	get('/api', async (req, res) => res.status(404).end('404 Not Found'));
+	get('/api/*', async (req, res) => res.status(404).end('404 Not Found'));
 
 	// Serve frontend
 	app.get('*', (req, res) => {
 		res.sendFile(path.resolve(__dirname, '../../client/build/index.html'));
 	});
+
+	// Exception handler
+	app.use(((error: Error, req: Request, res: Response, next: unknown) => {
+		if (error.constructor === BadRequestError) {
+			return res.status(400).end(error.message);
+		} else if (error.constructor === UnauthorisedError) {
+			return res.status(401).end(error.message);
+		} else {
+			return res.status(500).end(error.message);
+		}
+	}) as any);
 
 	app.listen(process.env.PORT || 9000);
 
