@@ -4,7 +4,7 @@ import { Redirect, Switch } from 'react-router';
 import { BrowserRouter as Router, Link, Route } from 'react-router-dom';
 import './index.css';
 import { CreateProblem } from './pages/CreateProblem';
-import { CreateWall2 } from './pages/CreateWall2';
+import { CreateWall } from './pages/CreateWall';
 import { NotFound } from './pages/NotFound';
 import { ProblemList } from './pages/ProblemList';
 import { ViewProblem } from './pages/ViewProblem';
@@ -23,9 +23,9 @@ ReactDOM.render(
 			<hr />
 
 			<Switch>
-				<Redirect exact path='/' to='/wall/1' />
+				<Redirect exact path='/' to='/walls' />
 				<Route exact path='/walls' component={WallList} />
-				<Route exact path='/wall/create' component={CreateWall2} />
+				<Route exact path='/wall/create' component={CreateWall} />
 				<Route exact path='/wall/:wallId(\d+)' component={CreateProblem} />
 				<Route exact path='/problems' component={ProblemList} />
 				<Route exact path='/problems/trash' render={routeProps => <ProblemList {...routeProps} trash />} />
