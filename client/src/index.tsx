@@ -14,6 +14,8 @@ import * as serviceWorker from './serviceWorker';
 ReactDOM.render(
 	<Router>
 		<div>
+			<Link to='/wall/create'>Create New Wall</Link>
+			{' / '}
 			<Link to='/walls'>Create Problem</Link>
 			{' / '}
 			<Link to='/problems'>Problem List</Link>

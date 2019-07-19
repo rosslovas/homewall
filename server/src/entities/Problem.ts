@@ -27,7 +27,7 @@ export class Problem {
 	@JoinTable()
 	holds?: Hold[];
 
-	constructor(init?: { name: string, difficulty?: string, holds?: Hold[], wall?: Wall }) {
+	constructor(init: { name: string, difficulty?: string, holds?: Hold[], wall?: Wall }) {
 		if (init) { Object.assign(this, init); }
 	}
 	

@@ -11,6 +11,8 @@ import { Problem } from './entities/Problem';
 import { Wall } from './entities/Wall';
 import RateLimit from 'express-rate-limit';
 import enforceHTTPS from 'express-enforces-ssl';
+import * as argon2 from 'argon2';
+import { User } from './entities/User';
 
 (async () => {
 
@@ -68,7 +70,14 @@ import enforceHTTPS from 'express-enforces-ssl';
 	});
 
 	app.post('/api/walls', async (req, res) => {
-		const { name, image, holdData }: { name: string, image: string, holdData: { x: number, y: number }[][] } = req.body;
+		const { username, password, name, image, holdData }: {
+			username: string,
+			password: string,
+			name: string,
+			image: string,
+			holdData: { x: number, y: number }[][]
+		} = req.body;
+
 		if (!name || !image || !holdData) {
 			res.status(400);
 			res.end('Missing data');
@@ -107,6 +116,13 @@ import enforceHTTPS from 'express-enforces-ssl';
 		) {
 			res.status(400);
 			res.end('badsize');
+			return;
+		}
+
+		const user = await connection.getRepository(User).findOne({ where: { username } });
+		if (!user || !(await argon2.verify(user.passwordHash, password))) {
+			res.status(401);
+			res.end('Bad username and/or password');
 			return;
 		}
 

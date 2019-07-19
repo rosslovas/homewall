@@ -34,6 +34,8 @@ export const CreateWall2 = withRouter(({ match, history }) => {
 	const [wallDimensions, setWallDimensions] = useState<{ width: number, height: number } | undefined>(undefined);
 	const [holds, setHolds] = useState<Hold[]>([]);
 	const [wallName, setWallName] = useState('');
+	const [username, setUsername] = useState('');
+	const [password, setPassword] = useState('');
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const imageRef = useRef<HTMLImageElement | null>(null);
@@ -117,6 +119,8 @@ export const CreateWall2 = withRouter(({ match, history }) => {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
+				username,
+				password,
 				name: wallName,
 				image: imageData,
 				holdData: holds.map(h => h.path)
@@ -130,7 +134,7 @@ export const CreateWall2 = withRouter(({ match, history }) => {
 		else {
 			alert(`${response.status}: ${await response.text()}`);
 		}
-	}, [history, holds, wallName]);
+	}, [history, holds, username, password, wallName]);
 
 	let drawing = useRef(false);
 	let newPath: Point[] = [];
@@ -229,6 +233,8 @@ export const CreateWall2 = withRouter(({ match, history }) => {
 		</label>
 		<div hidden={!imageChosen}>
 			{'Wall name: '}<input type='text' onChange={e => setWallName(e.target.value)}></input>
+			{' Username: '}<input type='text' onChange={e => setUsername(e.target.value)}></input>
+			{' Password: '}<input type='password' onChange={e => setPassword(e.target.value)}></input>
 			{' '}<button onClick={uploadWall}>Upload</button>
 		</div>
 		<div
