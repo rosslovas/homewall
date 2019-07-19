@@ -15,7 +15,7 @@ export class Wall {
 	@Column()
 	name: string;
 
-	@OneToOne(type => Image, { nullable: false, cascade: true })
+	@OneToOne(type => Image, { nullable: false, cascade: true, onDelete: 'CASCADE' })
 	@JoinColumn()
 	image: Image;
 
