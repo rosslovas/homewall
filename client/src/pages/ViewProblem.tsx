@@ -37,7 +37,7 @@ export const ViewProblem = withRouter(({ match, history }) => {
 				mode: 'cors'
 			});
 			if (response.ok) {
-				history.push(`/wall/${wallId}/problems`);
+				history.push(`/problems`);
 			}
 			else {
 				alert(`${response.status}: ${await response.text()}`);
