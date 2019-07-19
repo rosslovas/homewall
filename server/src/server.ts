@@ -1,13 +1,16 @@
 import compression from 'compression';
 import express from 'express';
+import helmet from 'helmet';
 import sizeOf from 'image-size';
 import * as path from 'path';
 import * as PostgressConnectionStringParser from 'pg-connection-string';
 import { ConnectionOptions, createConnection } from 'typeorm';
+import { Hold } from './entities/Hold';
 import { Image } from './entities/Image';
 import { Problem } from './entities/Problem';
 import { Wall } from './entities/Wall';
-import { Hold } from './entities/Hold';
+import RateLimit from 'express-rate-limit';
+import enforceHTTPS from 'express-enforces-ssl';
 
 (async () => {
 
@@ -36,7 +39,24 @@ import { Hold } from './entities/Hold';
 	const problemRepository = connection.getRepository(Problem);
 
 	const app = express();
+	
+	app.enable('trust proxy');
+	app.use(enforceHTTPS());
 	app.use(compression());
+	app.use(helmet());
+
+	app.get('*', new RateLimit({
+		windowMs: 10 * 60 * 1000,
+		max: 500
+	}));
+	const postOrPutOrDeleteLimit = new RateLimit({
+		windowMs: 10 * 60 * 1000,
+		max: 30
+	});
+	app.post('*', postOrPutOrDeleteLimit);
+	app.put('*', postOrPutOrDeleteLimit);
+	app.delete('*', postOrPutOrDeleteLimit);
+
 	app.use(express.static(path.join(__dirname, '../../client/build'), { maxAge: '1y' }));
 	app.use(express.json({ limit: 2000000 }));
 
