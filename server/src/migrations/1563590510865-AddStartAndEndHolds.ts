@@ -12,7 +12,7 @@ export class AddStartAndEndHolds1563590510865 implements MigrationInterface {
             await queryRunner.query(`ALTER TABLE "problem" ADD "endHold1Id" integer NOT NULL`);
         }
         else {
-            const newHold = new Hold('AddStartAndEndHolds_dummy');
+            const newHold = new Hold();
             newHold.data = '[]';
             newHold.wall = firstWall;
             await queryRunner.connection.getRepository(Hold).save(newHold);

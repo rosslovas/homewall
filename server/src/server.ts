@@ -140,7 +140,7 @@ class UnauthorisedError extends Error {
 
 		const newWall = new Wall(name, new Image(imageBuffer));
 		newWall.holds = holdData.map((points, i) => {
-			const hold = new Hold(`Hold ${i}`);
+			const hold = new Hold();
 			hold.data = JSON.stringify(points.map(p => {
 				if (typeof p.x !== 'number' || typeof p.y !== 'number') {
 					throw new BadRequestError('Invalid data');

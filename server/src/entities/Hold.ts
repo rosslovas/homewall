@@ -6,18 +6,11 @@ export class Hold {
 	
     @PrimaryGeneratedColumn()
 	id?: number;
-	
-	@Column()
-	name: string;
 
 	@Column('text')
 	data: string = '[]';
 
 	@ManyToOne(type => Wall, wall => wall.holds)
 	wall?: Wall;
-
-	constructor(name: string) {
-		this.name = name;
-	}
 	
 }
