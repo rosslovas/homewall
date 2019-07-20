@@ -1,6 +1,13 @@
 import { Point } from './Point';
 import { Rect } from './Rect';
 
+export enum HoldState {
+	Unselected,
+	Selected,
+	Start,
+	End
+}
+
 export class Hold {
 
 	readonly path2D: Path2D;
@@ -10,26 +17,21 @@ export class Hold {
 
 	constructor(
 		readonly path: ReadonlyArray<Point>,
-		path2D?: Path2D
+		public state = HoldState.Unselected
 	) {
-		if (!path2D) {
-			const newPath = new Path2D();
-			
-			for (const [index, point] of path.entries()) {
-				index === 0
-					? newPath.moveTo(point.x, point.y)
-					: newPath.lineTo(point.x, point.y);
-			}
-
-			if (path[0]) {
-				newPath.lineTo(path[0].x, path[0].y);
-			}
-
-			this.path2D = newPath;
+		const newPath = new Path2D();
+		
+		for (const [index, point] of path.entries()) {
+			index === 0
+				? newPath.moveTo(point.x, point.y)
+				: newPath.lineTo(point.x, point.y);
 		}
-		else {
-			this.path2D = path2D;
+
+		if (path[0]) {
+			newPath.lineTo(path[0].x, path[0].y);
 		}
+
+		this.path2D = newPath;
 
 		if (path[0]) {
 			let x1: number = path[0].x;

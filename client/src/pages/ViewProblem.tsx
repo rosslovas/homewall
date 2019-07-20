@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { withRouter } from 'react-router-dom';
 import { Wall } from '../components/Wall';
-import { Hold } from '../Hold';
+import { Hold, HoldState } from '../Hold';
 
 export const ViewProblem = withRouter(({ match, history }) => {
 
@@ -22,7 +22,15 @@ export const ViewProblem = withRouter(({ match, history }) => {
 			const response = await fetch(`/api/wall/${wallId}/problem/${problemId}`);
 			const problem = await response.json();
 			problem.holds = problem.holds
-				.map((hold: { data: string }) => new Hold(JSON.parse(hold.data)));
+				.map((hold: { data: string }) => new Hold(JSON.parse(hold.data), HoldState.Selected));
+			problem.holds.push(new Hold(JSON.parse(problem.startHold1.data), HoldState.Start));
+			if (problem.startHold2) {
+				problem.holds.push(new Hold(JSON.parse(problem.startHold2.data), HoldState.Start));
+			}
+			problem.holds.push(new Hold(JSON.parse(problem.endHold1.data), HoldState.End));
+			if (problem.endHold2) {
+				problem.holds.push(new Hold(JSON.parse(problem.endHold2.data), HoldState.End));
+			}
 			setProblem(problem);
 		}
 
@@ -73,6 +81,6 @@ export const ViewProblem = withRouter(({ match, history }) => {
 				? <button onClick={deleteProblem}>Delete</button>
 				: <button onClick={restoreProblem}>Restore</button>}
 		<hr />
-		<Wall interactive={false} imageSrc={`/api/wall/${wallId}/image`} holds={problem.holds} selectedHolds={problem.holds} />
+		<Wall interactive={false} imageSrc={`/api/wall/${wallId}/image`} holds={problem.holds} />
 	</> : <></>;
 });

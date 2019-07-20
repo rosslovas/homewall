@@ -1,20 +1,63 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Hold } from '../Hold';
+import { Hold, HoldState } from '../Hold';
 import { Point } from '../Point';
 import './Wall.css';
+
+function renderSelectedHolds(holds: Hold[], hoveredHold: Hold | undefined, ctx: CanvasRenderingContext2D) {
+
+	if (hoveredHold) {
+		if (hoveredHold.state === HoldState.Start) {
+			ctx.strokeStyle = '#4fc3f7ee';
+			ctx.fillStyle = '#8888ff0a';
+		} else if (hoveredHold.state === HoldState.End) {
+			ctx.strokeStyle = '#77ff77dd';
+			ctx.fillStyle = '#88ff880a';
+		} else {
+			ctx.strokeStyle = '#ffffffff';
+			ctx.fillStyle = '#aabbaa11';
+		}
+		ctx.stroke(hoveredHold.path2D);
+		ctx.fill(hoveredHold.path2D);
+	}
+
+	for (const hold of holds.filter(h => h !== hoveredHold && h.state !== HoldState.Unselected)) {
+		if (hold.state === HoldState.Start) {
+			ctx.strokeStyle = '#4fc3f7dd';
+			ctx.fillStyle = '#8888ff0a';
+		} else if (hold.state === HoldState.End) {
+			ctx.strokeStyle = '#77ff77cc';
+			ctx.fillStyle = '#88ff880a';
+		} else {
+			ctx.strokeStyle = '#ffffffcc';
+			ctx.fillStyle = '#88aa880a';
+		}
+		ctx.stroke(hold.path2D);
+		ctx.fill(hold.path2D);
+	}
+}
+
+function getHoldAtPoint(holds: Hold[], point: Point, ctx: CanvasRenderingContext2D) {
+	for (let i = holds.length - 1; i >= 0; --i) {
+		const hold = holds[i];
+		if (hold.isPointInBounds(point, ctx)) {
+			return hold;
+		}
+	}
+}
 
 export interface WallProps {
 	interactive: boolean;
 	imageSrc: string;
 	holds: Hold[];
-	selectedHolds: Hold[];
 	holdClicked?: (hold: Hold) => void;
 }
 
-export const Wall: React.FC<WallProps> = ({ interactive, imageSrc, holds, selectedHolds, holdClicked }) => {
+export const Wall: React.FC<WallProps> = ({ interactive, imageSrc, holds, holdClicked }) => {
 
 	const [wallDimensions, setWallDimensions] = useState<{ width: number, height: number } | undefined>(undefined);
 	const [ready, setReady] = useState(false);
+	const [holdsDrawnOnCanvas1, setHoldsDrawnOnCanvas1] = useState(false);
+	const [hoveredHold, setHoveredHold] = useState<Hold | undefined>();
 
 	const canvas1Ref = useRef<HTMLCanvasElement>(null);
 	const canvas2Ref = useRef<HTMLCanvasElement>(null);
@@ -25,54 +68,42 @@ export const Wall: React.FC<WallProps> = ({ interactive, imageSrc, holds, select
 
 	const canvasesReady = useCallback(() => {
 		if (ready) {
-			if (interactive) {
-				const ctx = getCanvas1Context();
-				ctx.strokeStyle = '#ffffff33';
+			if (interactive && !holdsDrawnOnCanvas1) {
+				const ctx1 = getCanvas1Context();
+				ctx1.strokeStyle = '#ffffff33';
 				// ctx.fillStyle = '#ffffff02';
-				ctx.lineWidth = 2.5;
+				ctx1.lineWidth = 2.5;
 
 				for (const hold of holds) {
-					ctx.stroke(hold.path2D);
+					ctx1.stroke(hold.path2D);
 					// ctx.fill(hold.path2D);
+				}
+
+				if (holds.length > 0) {
+					setHoldsDrawnOnCanvas1(true);
 				}
 			}
 
-			{
-				const ctx = getCanvas2Context();
-				ctx.strokeStyle = '#ffffffaa';
-				ctx.fillStyle = '#88ff880a';
-				ctx.lineWidth = 3.5;
-			}
+			const ctx2 = getCanvas2Context();
+			ctx2.lineWidth = 3.5;
 		}
-	}, [ready, interactive, getCanvas1Context, getCanvas2Context, holds]);
+	}, [ready, interactive, getCanvas1Context, getCanvas2Context, holds, holdsDrawnOnCanvas1]);
 
 	useEffect(() => {
 		if (ready) {
 			const canvas2 = getCanvas2();
 			const ctx = getCanvas2Context();
 			ctx.clearRect(0, 0, canvas2.width, canvas2.height);
-			for (const hold of selectedHolds) {
-				ctx.stroke(hold.path2D);
-				ctx.fill(hold.path2D);
-			}
+			renderSelectedHolds(holds, hoveredHold, ctx);
 		}
-	}, [selectedHolds, ready, getCanvas2, getCanvas2Context]);
-
-	const getHoldAtPoint = useCallback((point: Point, ctx: CanvasRenderingContext2D) => {
-		for (let i = holds.length - 1; i >= 0; --i) {
-			const hold = holds[i];
-			if (hold.isPointInBounds(point, ctx)) {
-				return hold;
-			}
-		}
-	}, [holds]);
+	}, [holds, hoveredHold, ready, getCanvas2, getCanvas2Context]);
 
 	function click(e: React.MouseEvent<HTMLCanvasElement>) {
 		const { left, top } = getCanvas1().getBoundingClientRect();
 		const mouseX = e.clientX - left;
 		const mouseY = e.clientY - top;
 
-		const hold = getHoldAtPoint({ x: mouseX, y: mouseY }, getCanvas1Context());
+		const hold = getHoldAtPoint(holds, { x: mouseX, y: mouseY }, getCanvas1Context());
 
 		console.log(hold);
 
@@ -88,27 +119,13 @@ export const Wall: React.FC<WallProps> = ({ interactive, imageSrc, holds, select
 				const mouseX = e.clientX - left;
 				const mouseY = e.clientY - top;
 
-				const canvas2 = getCanvas2();
-				const ctx = getCanvas2Context();
-				ctx.clearRect(0, 0, canvas2.width, canvas2.height);
-				const hoveredHold = getHoldAtPoint({ x: mouseX, y: mouseY }, getCanvas1Context());
-				if (hoveredHold) {
-					ctx.stroke(hoveredHold.path2D);
-					ctx.fill(hoveredHold.path2D);
-				}
-
-				for (const hold of selectedHolds) {
-					if (hold !== hoveredHold) {
-						ctx.stroke(hold.path2D);
-						ctx.fill(hold.path2D);
-					}
-				}
+				setHoveredHold(getHoldAtPoint(holds, { x: mouseX, y: mouseY }, getCanvas1Context()));
 			}
 
 			document.addEventListener('mousemove', mouseMove);
 			return () => document.removeEventListener('mousemove', mouseMove);
 		}
-	}, [ready, interactive, getCanvas1, getCanvas2, getCanvas1Context, getCanvas2Context, getHoldAtPoint, holds, selectedHolds]);
+	}, [ready, interactive, getCanvas1, getCanvas2, getCanvas1Context, getCanvas2Context, holds]);
 
 	return <>
 		<div

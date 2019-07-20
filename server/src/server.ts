@@ -38,14 +38,13 @@ class UnauthorisedError extends Error {
 				database: connectionOptions.database,
 				entities: [__dirname + '/entities/*.js'],
 				migrations: [__dirname + '/migrations/*.js'],
-				// synchronize: true,
+				synchronize: true,
 				extra: {
 					ssl: true
 				}
 			} as ConnectionOptions;
 		}
 	})()!);
-	await connection.runMigrations();
 
 	const wallRepository = connection.getRepository(Wall);
 	const problemRepository = connection.getRepository(Problem);
@@ -249,20 +248,20 @@ class UnauthorisedError extends Error {
 		const data: {
 			problemName: string,
 			difficulty: string,
-			startHoldId1: number,
-			startHoldId2?: number,
-			endHoldId1: number,
-			endHoldId2?: number,
+			startHold1Id: number,
+			startHold2Id?: number,
+			endHold1Id: number,
+			endHold2Id?: number,
 			holdIds: number[]
 		} = req.body;
 
 		if (!data.problemName) {
 			throw new BadRequestError('All problems must have a name');
 		}
-		if (data.startHoldId1 == null) {
+		if (data.startHold1Id == null) {
 			throw new BadRequestError('All problems must have at least 1 start hold');
 		}
-		if (data.endHoldId1 == null) {
+		if (data.endHold1Id == null) {
 			throw new BadRequestError('All problems must have at least 1 end hold');
 		}
 
@@ -274,17 +273,17 @@ class UnauthorisedError extends Error {
 
 		if (data.holdIds
 			.some(holdId =>
-				holdId === data.startHoldId1 ||
-				holdId === data.startHoldId2 ||
-				holdId === data.endHoldId1 ||
-				holdId === data.endHoldId2 ||
+				holdId === data.startHold1Id ||
+				holdId === data.startHold2Id ||
+				holdId === data.endHold1Id ||
+				holdId === data.endHold2Id ||
 				typeof holdId !== 'number' ||
 				!holdsById.has(holdId)
 			) ||
-			!holdsById.has(data.startHoldId1) ||
-			(data.startHoldId2 != null && !holdsById.has(data.startHoldId2)) ||
-			!holdsById.has(data.endHoldId1) ||
-			(data.endHoldId2 != null && !holdsById.has(data.endHoldId2))
+			!holdsById.has(data.startHold1Id) ||
+			(data.startHold2Id != null && !holdsById.has(data.startHold2Id)) ||
+			!holdsById.has(data.endHold1Id) ||
+			(data.endHold2Id != null && !holdsById.has(data.endHold2Id))
 		) {
 			throw new BadRequestError('Invalid hold data');
 		}
@@ -294,10 +293,10 @@ class UnauthorisedError extends Error {
 			name: data.problemName,
 			difficulty: data.difficulty || undefined,
 			wall,
-			startHold1: holdsById.get(data.startHoldId1)!,
-			startHold2: data.startHoldId2 != null ? holdsById.get(data.startHoldId2)! : undefined,
-			endHold1: holdsById.get(data.endHoldId1)!,
-			endHold2: data.endHoldId2 != null ? holdsById.get(data.endHoldId2)! : undefined,
+			startHold1: holdsById.get(data.startHold1Id)!,
+			startHold2: data.startHold2Id != null ? holdsById.get(data.startHold2Id)! : undefined,
+			endHold1: holdsById.get(data.endHold1Id)!,
+			endHold2: data.endHold2Id != null ? holdsById.get(data.endHold2Id)! : undefined,
 			holds: data.holdIds.map(holdId => holdsById.get(holdId)!)
 		});
 		await problemRepository.save(problem);

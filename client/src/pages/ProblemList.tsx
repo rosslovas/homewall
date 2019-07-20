@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { withRouter, Link, RouteComponentProps } from 'react-router-dom';
+import { Link, RouteComponentProps, withRouter } from 'react-router-dom';
 
 type ProblemListParams = RouteComponentProps<{ wallId: string }> & {
 	trash?: boolean;
