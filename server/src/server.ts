@@ -38,13 +38,14 @@ class UnauthorisedError extends Error {
 				database: connectionOptions.database,
 				entities: [__dirname + '/entities/*.js'],
 				migrations: [__dirname + '/migrations/*.js'],
-				synchronize: true,
+				// synchronize: true,
 				extra: {
 					ssl: true
 				}
 			} as ConnectionOptions;
 		}
 	})()!);
+	await connection.runMigrations();
 
 	const wallRepository = connection.getRepository(Wall);
 	const problemRepository = connection.getRepository(Problem);
@@ -248,25 +249,59 @@ class UnauthorisedError extends Error {
 		const data: {
 			problemName: string,
 			difficulty: string,
-			holdIds: number[],
+			startHoldId1: number,
+			startHoldId2?: number,
+			endHoldId1: number,
+			endHoldId2?: number,
+			holdIds: number[]
 		} = req.body;
 
 		if (!data.problemName) {
 			throw new BadRequestError('All problems must have a name');
 		}
-		if (data.holdIds.length < 2) {
-			throw new BadRequestError('All problems must have at least 2 holds');
+		if (data.startHoldId1 == null) {
+			throw new BadRequestError('All problems must have at least 1 start hold');
+		}
+		if (data.endHoldId1 == null) {
+			throw new BadRequestError('All problems must have at least 1 end hold');
 		}
 
 		const wall = await wallRepository.findOneOrFail(wallId, { relations: ['holds'] });
+		const holdsById = wall.holds!.reduce((map, hold) => {
+			map.set(hold.id!, hold);
+			return map;
+		}, new Map<number, Hold>());
+
+		if (data.holdIds
+			.some(holdId =>
+				holdId === data.startHoldId1 ||
+				holdId === data.startHoldId2 ||
+				holdId === data.endHoldId1 ||
+				holdId === data.endHoldId2 ||
+				typeof holdId !== 'number' ||
+				!holdsById.has(holdId)
+			) ||
+			!holdsById.has(data.startHoldId1) ||
+			(data.startHoldId2 != null && !holdsById.has(data.startHoldId2)) ||
+			!holdsById.has(data.endHoldId1) ||
+			(data.endHoldId2 != null && !holdsById.has(data.endHoldId2))
+		) {
+			throw new BadRequestError('Invalid hold data');
+		}
+
 		// TODO: Save the linked holds without first looking them up in db?
 		const problem = new Problem({
 			name: data.problemName,
 			difficulty: data.difficulty || undefined,
-			holds: wall!.holds!.filter(hold => data.holdIds.includes(hold.id!)),
-			wall
+			wall,
+			startHold1: holdsById.get(data.startHoldId1)!,
+			startHold2: data.startHoldId2 != null ? holdsById.get(data.startHoldId2)! : undefined,
+			endHold1: holdsById.get(data.endHoldId1)!,
+			endHold2: data.endHoldId2 != null ? holdsById.get(data.endHoldId2)! : undefined,
+			holds: data.holdIds.map(holdId => holdsById.get(holdId)!)
 		});
 		await problemRepository.save(problem);
+
 		console.log(`New problem has id ${problem.id}`);
 
 		res.setHeader('Content-Type', 'application/json');
@@ -277,7 +312,7 @@ class UnauthorisedError extends Error {
 		const { wallId, problemId }: { wallId: string, problemId: string } = req.params;
 
 		const problem = await problemRepository
-			.findOne(problemId, { relations: ['wall', 'holds'] });
+			.findOne(problemId, { relations: ['wall', 'holds', 'startHold1', 'startHold2', 'endHold1', 'endHold2'] });
 
 		if (!problem || !problem.wall || problem.wall.id !== parseInt(wallId)) {
 			return res.status(404).end('404 Not Found');

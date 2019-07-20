@@ -31,25 +31,29 @@ export class Hold {
 			this.path2D = path2D;
 		}
 
-		let x1: number = path[0].x;
-		let y1: number = path[0].y;
-		let x2: number = path[0].x;
-		let y2: number = path[0].y;
-		for (const point of path) {
-			if (point.x < x1) {
-				x1 = point.x;
+		if (path[0]) {
+			let x1: number = path[0].x;
+			let y1: number = path[0].y;
+			let x2: number = path[0].x;
+			let y2: number = path[0].y;
+			for (const point of path) {
+				if (point.x < x1) {
+					x1 = point.x;
+				}
+				if (point.x > x2) {
+					x2 = point.x;
+				}
+				if (point.y < y1) {
+					y1 = point.y;
+				}
+				if (point.y > y2) {
+					y2 = point.y;
+				}
 			}
-			if (point.x > x2) {
-				x2 = point.x;
-			}
-			if (point.y < y1) {
-				y1 = point.y;
-			}
-			if (point.y > y2) {
-				y2 = point.y;
-			}
+			this.bounds = new Rect(x1, y1, x2, y2);
+		} else {
+			this.bounds = new Rect(0, 0, 0, 0);
 		}
-		this.bounds = new Rect(x1, y1, x2, y2);
 	}
 
 	isPointInBounds(point: Point, context2D: CanvasRenderingContext2D) {
