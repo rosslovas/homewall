@@ -5,6 +5,7 @@ import enforceHTTPS from 'express-enforces-ssl';
 import RateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import sizeOf from 'image-size';
+import onHeaders from 'on-headers';
 import * as path from 'path';
 import * as PostgressConnectionStringParser from 'pg-connection-string';
 import { ConnectionOptions, createConnection } from 'typeorm';
@@ -47,6 +48,7 @@ class UnauthorisedError extends Error {
 
 	const wallRepository = connection.getRepository(Wall);
 	const problemRepository = connection.getRepository(Problem);
+	const userRepository = connection.getRepository(User);
 
 	const app = express();
 
@@ -83,7 +85,7 @@ class UnauthorisedError extends Error {
 	app.put('*', postOrPutOrDeleteLimit);
 	app.delete('*', postOrPutOrDeleteLimit);
 
-	app.use(express.static(path.join(__dirname, '../../client/build'), { maxAge: '1y' }));
+	app.use(express.static(path.join(__dirname, '../../client/build'), { maxAge: '1y', index: false }));
 	app.use(express.json({ limit: 2000000 }));
 
 	get('/api/walls', async (req, res) => {
@@ -131,7 +133,7 @@ class UnauthorisedError extends Error {
 			throw new BadRequestError('Image must be between 1x1 and 2000x2000 pixels');
 		}
 
-		const user = await connection.getRepository(User).findOne({ where: { username } });
+		const user = await userRepository.findOne({ where: { username } });
 		if (!user || !(await argon2.verify(user.passwordHash, password))) {
 			throw new UnauthorisedError('Bad username and/or password');
 		}
@@ -148,7 +150,7 @@ class UnauthorisedError extends Error {
 			}));
 			return hold;
 		});
-		await connection.getRepository(Wall).save(newWall);
+		await wallRepository.save(newWall);
 
 		console.log(`New wall has id ${newWall.id}`);
 
@@ -306,7 +308,14 @@ class UnauthorisedError extends Error {
 
 	// Serve frontend
 	app.get('*', (req, res) => {
-		res.sendFile(path.resolve(__dirname, '../../client/build/index.html'));
+		// Scrub the ETag header to ensure no caching
+		onHeaders(res, function () { this.removeHeader('ETag') });
+		res.sendFile(path.resolve(__dirname, '../../client/build/index.html'), {
+			headers: {
+				'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+				'Expires': '0'
+			}
+		});
 	});
 
 	// Exception handler
