@@ -58,6 +58,7 @@ export const Wall: React.FC<WallProps> = ({ interactive, imageSrc, holds, holdCl
 	const [ready, setReady] = useState(false);
 	const [holdsDrawnOnCanvas1, setHoldsDrawnOnCanvas1] = useState(false);
 	const [hoveredHold, setHoveredHold] = useState<Hold | undefined>();
+	const [touchDetected, setTouchDetected] = useState(false);
 
 	const canvas1Ref = useRef<HTMLCanvasElement>(null);
 	const canvas2Ref = useRef<HTMLCanvasElement>(null);
@@ -115,6 +116,10 @@ export const Wall: React.FC<WallProps> = ({ interactive, imageSrc, holds, holdCl
 	useEffect(() => {
 		if (ready && interactive) {
 			function mouseMove(e: MouseEvent) {
+				if (touchDetected) {
+					return;
+				}
+
 				const { left, top } = getCanvas1().getBoundingClientRect();
 				const mouseX = e.clientX - left;
 				const mouseY = e.clientY - top;
@@ -122,10 +127,19 @@ export const Wall: React.FC<WallProps> = ({ interactive, imageSrc, holds, holdCl
 				setHoveredHold(getHoldAtPoint(holds, { x: mouseX, y: mouseY }, getCanvas1Context()));
 			}
 
+			// Prevent mouseMove from triggering on mobile
+			function touchEnd(e: TouchEvent) {
+				setTouchDetected(true);
+			}
+
+			document.addEventListener('touchend', touchEnd);
 			document.addEventListener('mousemove', mouseMove);
-			return () => document.removeEventListener('mousemove', mouseMove);
+			return () => {
+				document.removeEventListener('mousemove', mouseMove);
+				document.removeEventListener('touchend', touchEnd);
+			}
 		}
-	}, [ready, interactive, getCanvas1, getCanvas2, getCanvas1Context, getCanvas2Context, holds]);
+	}, [ready, interactive, touchDetected, getCanvas1, getCanvas2, getCanvas1Context, getCanvas2Context, holds]);
 
 	return <>
 		<div

@@ -113,7 +113,7 @@ export const CreateProblem = withRouter(({ match, history }) => {
 		{' Difficulty (optional): '}
 		<input type='text' onChange={e => setDifficulty(e.target.value)}></input>
 		{' '}
-		<button onClick={saveProblem}>Save</button>
+		<button className="btn btn-primary" onClick={saveProblem}>Save</button>
 		<hr />
 		<Wall interactive imageSrc={`/api/wall/${wallId}/image`} holds={holds} holdClicked={holdClicked} />
 	</>;

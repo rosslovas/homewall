@@ -76,10 +76,10 @@ export const ViewProblem = withRouter(({ match, history }) => {
 	return problem ? <>
 		Problem: {problem.name}{problem.difficulty ? `, difficulty: ${problem.difficulty} ` : ' '}
 		{inLimbo
-			? <button>...</button>
+			? <button className="btn btn-secondary">...</button>
 			: problem.deletedOn == null
-				? <button onClick={deleteProblem}>Delete</button>
-				: <button onClick={restoreProblem}>Restore</button>}
+				? <button className="btn btn-danger" onClick={deleteProblem}>Delete</button>
+				: <button className="btn btn-primary" onClick={restoreProblem}>Restore</button>}
 		<hr />
 		<Wall interactive={false} imageSrc={`/api/wall/${wallId}/image`} holds={problem.holds} />
 	</> : <></>;

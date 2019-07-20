@@ -1,3 +1,4 @@
+import 'bootstrap/dist/css/bootstrap.css';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Redirect, Switch } from 'react-router';
@@ -11,6 +12,7 @@ import { ViewProblem } from './pages/ViewProblem';
 import { WallList } from './pages/WallList';
 import * as serviceWorker from './serviceWorker';
 
+
 ReactDOM.render(
 	<Router>
 		<div>
@@ -23,7 +25,7 @@ ReactDOM.render(
 			<hr />
 
 			<Switch>
-				<Redirect exact path='/' to='/walls' />
+				<Redirect exact path='/' to='/problems' />
 				<Route exact path='/walls' component={WallList} />
 				<Route exact path='/wall/create' component={CreateWall} />
 				<Route exact path='/wall/:wallId(\d+)' component={CreateProblem} />
