@@ -3,6 +3,9 @@ import { withRouter } from 'react-router-dom';
 import { Wall } from '../components/Wall';
 import { Hold, HoldState } from '../Hold';
 
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+
 function countHolds(holds: Hold[]) {
 	let startHoldCount = 0;
 	let endHoldCount = 0;
@@ -65,7 +68,7 @@ export const CreateProblem = withRouter(({ match, history }) => {
 		getData();
 	}, [wallId]);
 
-	const saveProblem = useCallback(() => {
+	const saveProblem = useCallback((e: React.FormEvent) => {
 		async function saveProblem() {
 			const startHoldIds: (number | undefined)[] = [];
 			const endHoldIds: (number | undefined)[] = [];
@@ -105,16 +108,21 @@ export const CreateProblem = withRouter(({ match, history }) => {
 			}
 		}
 		saveProblem();
+		e.preventDefault();
 	}, [history, wallId, holds, problemName, difficulty]);
 
 	return <>
-		{'Problem name: '}
-		<input type='text' onChange={e => setProblemName(e.target.value)}></input>
-		{' Difficulty (optional): '}
-		<input type='text' onChange={e => setDifficulty(e.target.value)}></input>
-		{' '}
-		<button className="btn btn-primary" onClick={saveProblem}>Save</button>
-		<hr />
+		<Form inline className='mb-1' onSubmit={saveProblem}>
+			<Form.Group controlId='problemName'>
+				<Form.Label className='mx-1'>Problem name:</Form.Label>
+				<Form.Control required className='mr-1' placeholder='Problem name' onChange={(e: any) => setProblemName(e.target.value)}></Form.Control>
+			</Form.Group>
+			<Form.Group controlId='difficulty'>
+				<Form.Label className='mx-1'>Difficulty (optional):</Form.Label>
+				<Form.Control className='mr-1' placeholder='Difficulty' onChange={(e: any) => setDifficulty(e.target.value)}></Form.Control>
+			</Form.Group>
+			<Button className='ml-1' type='submit' variant='outline-success'>Save</Button>
+		</Form>
 		<Wall interactive imageSrc={`/api/wall/${wallId}/image`} holds={holds} holdClicked={holdClicked} />
 	</>;
 });

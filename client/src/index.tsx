@@ -1,9 +1,10 @@
-import 'bootstrap/dist/css/bootstrap.css';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import Nav from 'react-bootstrap/Nav';
+import Navbar from 'react-bootstrap/Navbar';
 import ReactDOM from 'react-dom';
-import { Redirect, Switch } from 'react-router';
-import { BrowserRouter as Router, Link, Route } from 'react-router-dom';
-import './index.css';
+import { Redirect, Switch, withRouter } from 'react-router';
+import { LinkContainer } from 'react-router-bootstrap';
+import { BrowserRouter as Router, NavLinkProps, Route } from 'react-router-dom';
 import { CreateProblem } from './pages/CreateProblem';
 import { CreateWall } from './pages/CreateWall';
 import { NotFound } from './pages/NotFound';
@@ -11,18 +12,41 @@ import { ProblemList } from './pages/ProblemList';
 import { ViewProblem } from './pages/ViewProblem';
 import { WallList } from './pages/WallList';
 import * as serviceWorker from './serviceWorker';
+import './theme.scss';
 
+const NavLink: React.FC<NavLinkProps & { eventKey?: string }> = props => <LinkContainer {...props}><Nav.Link eventKey={props.eventKey}>{props.children}</Nav.Link></LinkContainer>
+
+const Navigation = withRouter(({ location }) => {
+
+	const [activeKey, setActiveKey] = useState('');
+
+	useEffect(() => {
+		if (location.pathname === '/wall/create') {
+			setActiveKey('createWall');
+		} else if (/^\/(walls|wall\/\d+)$/.test(location.pathname)) {
+			setActiveKey('createProblem');
+		} else if (/^\/(problems(?:\/trash)?|wall\/\d+\/problem\/\d+)$/.test(location.pathname)) {
+			setActiveKey('problemList');
+		} else {
+			setActiveKey('');
+		}
+	}, [location])
+
+	return (
+		<Navbar className='rounded p-0 mb-2' bg='light'>
+			<Nav variant='pills' activeKey={activeKey}>
+				<NavLink eventKey='createWall' to='/wall/create'>Create New Wall</NavLink>
+				<NavLink eventKey='createProblem' to='/walls'>Create Problem</NavLink>
+				<NavLink eventKey='problemList' to='/problems'>Problem List</NavLink>
+			</Nav>
+		</Navbar>
+	);
+});
 
 ReactDOM.render(
 	<Router>
-		<div>
-			<Link to='/wall/create'>Create New Wall</Link>
-			{' / '}
-			<Link to='/walls'>Create Problem</Link>
-			{' / '}
-			<Link to='/problems'>Problem List</Link>
-
-			<hr />
+		<>
+			<Navigation />
 
 			<Switch>
 				<Redirect exact path='/' to='/problems' />
@@ -34,7 +58,7 @@ ReactDOM.render(
 				<Route exact path='/wall/:wallId(\d+)/problem/:problemId(\d+)' component={ViewProblem} />
 				<Route component={NotFound} status={404} />
 			</Switch>
-		</div>
+		</>
 	</Router>,
 	document.getElementById('root'));
 

@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
 import { withRouter } from 'react-router-dom';
 import { Wall } from '../components/Wall';
 import { Hold, HoldState } from '../Hold';
@@ -74,13 +76,16 @@ export const ViewProblem = withRouter(({ match, history }) => {
 	}, [setInLimbo, wallId, problemId, problem]);
 
 	return problem ? <>
-		Problem: {problem.name}{problem.difficulty ? `, difficulty: ${problem.difficulty} ` : ' '}
-		{inLimbo
-			? <button className="btn btn-secondary">...</button>
-			: problem.deletedOn == null
-				? <button className="btn btn-danger" onClick={deleteProblem}>Delete</button>
-				: <button className="btn btn-primary" onClick={restoreProblem}>Restore</button>}
-		<hr />
+		<Form inline className='mb-1'>
+			<Form.Label className='mx-1'>
+				Problem: {problem.name}{problem.difficulty ? `, difficulty: ${problem.difficulty}` : ''}
+			</Form.Label>
+			{inLimbo
+				? <Button variant='outline-secondary'>...</Button>
+				: problem.deletedOn == null
+					? <Button variant='outline-danger' onClick={deleteProblem}>Delete</Button>
+					: <Button variant='outline-success' onClick={restoreProblem}>Restore</Button>}
+		</Form>
 		<Wall interactive={false} imageSrc={`/api/wall/${wallId}/image`} holds={problem.holds} />
 	</> : <></>;
 });

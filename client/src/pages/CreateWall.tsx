@@ -236,7 +236,6 @@ export const CreateWall = withRouter(({ match, history }) => {
 			{' Username: '}<input type='text' onChange={e => setUsername(e.target.value)}></input>
 			{' Password: '}<input type='password' onChange={e => setPassword(e.target.value)}></input>
 			{' '}<button className="btn btn-primary" onClick={uploadWall}>Upload</button>
-			<hr />
 		</div>
 		<div
 			id='canvasContainer'
